@@ -124,7 +124,14 @@ func (self *JobBuilder) BuildJob(resp http.ResponseWriter, req *http.Request) {
 
     }
 
-    self.nomad.Register(job, nil)
+    jobResp, _, err := self.nomad.Register(job, nil)
+    if err != nil {
+        logEntry.Errorf("unable to submit job: %s", err)
+        resp.WriteHeader(http.StatusInternalServerError)
+        return
+    }
+
+    logEntry.Infof("submitted job with eval id %s", jobResp.EvalID)
 
     resp.WriteHeader(http.StatusNoContent)
 }
