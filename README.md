@@ -14,6 +14,9 @@ config:
         - "bar"
 
 artifacts:
+    -   source: ${NOMAD_META_nomadci_clone_source}
+        destination: local/work/src/github.com/example/my-repo/
+
     -   source: https://github.com/golang/dep/releases/download/v0.3.2/dep-linux-amd64
         destination: local/bin/
         mode: file

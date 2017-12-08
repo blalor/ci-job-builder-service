@@ -105,6 +105,31 @@ func (self *JobBuilder) BuildJob(resp http.ResponseWriter, req *http.Request) {
     // @todo only allow a limited set of config params, based on driver
     jobSpec.Config["work_dir"] = "${NOMAD_TASK_DIR}/work"
 
+    // if the user hasn't already told us what to do with the clone_source
+    // archive, add a default artifact to the job.
+    defaultArtifactSource := StringToPtr("${NOMAD_META_nomadci_clone_source}")
+    defaultArtifactSatisfied := false
+    for _, artifact := range jobSpec.Artifacts {
+        if *artifact.GetterSource == *defaultArtifactSource {
+            defaultArtifactSatisfied = true
+            break
+        }
+    }
+
+    if ! defaultArtifactSatisfied {
+        jobSpec.Artifacts = append(
+            // this is the default artifact that provides the source that was
+            // previously cloned
+            []*nomadapi.TaskArtifact{
+                &nomadapi.TaskArtifact{
+                    GetterSource: StringToPtr("${NOMAD_META_nomadci_clone_source}"),
+                    RelativeDest: StringToPtr("local/work"),
+                },
+            },
+            jobSpec.Artifacts...,
+        )
+    }
+
     // https://www.nomadproject.io/api/json-jobs.html
     job := &nomadapi.Job{
         ID: StringToPtr(jobId),
@@ -129,17 +154,7 @@ func (self *JobBuilder) BuildJob(resp http.ResponseWriter, req *http.Request) {
                             "nomadci.clone_source": payload.SourceArchive,
                         },
 
-                        Artifacts: append(
-                            []*nomadapi.TaskArtifact{
-                                // this is the default artifact that provides
-                                // the source that was previously cloned
-                                &nomadapi.TaskArtifact{
-                                    GetterSource: StringToPtr("${NOMAD_META_nomadci_clone_source}"),
-                                    RelativeDest: StringToPtr("local/work"),
-                                },
-                            },
-                            jobSpec.Artifacts...,
-                        ),
+                        Artifacts: jobSpec.Artifacts,
                     },
                 },
             },

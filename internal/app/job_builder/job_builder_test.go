@@ -186,4 +186,61 @@ artifacts:
             },
         }))
     })
+
+    It("builds and submits a job with an artifact", func() {
+        job := submitPayload(map[string]string{
+            "source_archive": "s3.amazonaws.com/bucket/archive.tar.gz",
+            "job_spec": `
+driver: docker
+config:
+    image: golang
+    command: build.sh
+
+artifacts:
+    -   source: ${NOMAD_META_nomadci_clone_source}
+        destination: local/work/src/github.com/example/my-repo/
+`,
+        })
+
+        // id must be provided, needs to be unique
+        Expect(job.ID).ToNot(BeNil())
+        Expect(*job.ID).To(HavePrefix("ci-job/"))
+
+        // name must be provided
+        Expect(job.Name).To(Equal(job.ID))
+
+        Expect(job.Datacenters).To(Equal([]string{"dc1"}))
+
+        Expect(job.Type).To(Equal(StringToPtr("batch")))
+
+        Expect(job.TaskGroups).To(HaveLen(1))
+        Expect(job.TaskGroups[0]).To(Equal(&nomadapi.TaskGroup{
+            Name: StringToPtr("builder"),
+
+            Tasks: []*nomadapi.Task{
+                &nomadapi.Task{
+                    Name: "builder",
+
+                    Driver: "docker",
+                    Config: map[string]interface{}{
+                        "image": "golang",
+                        "command": "build.sh",
+
+                        "work_dir": "${NOMAD_TASK_DIR}/work",
+                    },
+
+                    Meta: map[string]string{
+                        "nomadci.clone_source": "s3.amazonaws.com/bucket/archive.tar.gz",
+                    },
+
+                    Artifacts: []*nomadapi.TaskArtifact{
+                        &nomadapi.TaskArtifact{
+                            GetterSource: StringToPtr("${NOMAD_META_nomadci_clone_source}"),
+                            RelativeDest: StringToPtr("local/work/src/github.com/example/my-repo/"),
+                        },
+                    },
+                },
+            },
+        }))
+    })
 })
