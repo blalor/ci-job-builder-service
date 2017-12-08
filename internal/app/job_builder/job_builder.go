@@ -15,12 +15,17 @@ import (
     "github.com/nomad-ci/ci-job-builder-service/internal/pkg/interfaces"
 
     "encoding/json"
+    "github.com/mitchellh/mapstructure"
     "github.com/ghodss/yaml"
 )
 
+// mapstructure used so that we can use the same serialization format as used in
+// the Nomad source.  this allows for dropping in Artifacts without having to
+// define our own type for it.
 type JobSpec struct {
-    Driver string `json:"driver"`
-    Config map[string]interface{} `json:"config"`
+    Driver    string                   `mapstructure:"driver"`
+    Config    map[string]interface{}   `mapstructure:"config"`
+    Artifacts []*nomadapi.TaskArtifact `mapstructure:"artifacts"`
 }
 
 type JobBuilderPayload struct {
@@ -79,10 +84,18 @@ func (self *JobBuilder) BuildJob(resp http.ResponseWriter, req *http.Request) {
         return
     }
 
-    var jobSpec JobSpec
-    err = yaml.Unmarshal([]byte(payload.JobSpec), &jobSpec)
+    var untypedJobSpec map[string]interface{}
+    err = yaml.Unmarshal([]byte(payload.JobSpec), &untypedJobSpec)
     if err != nil {
         logEntry.Errorf("unable to unmarshal job spec: %s", err)
+        resp.WriteHeader(http.StatusBadRequest)
+        return
+    }
+
+    var jobSpec JobSpec
+    err = mapstructure.Decode(untypedJobSpec, &jobSpec)
+    if err != nil {
+        logEntry.Errorf("unable to decode untyped job spec: %s", err)
         resp.WriteHeader(http.StatusBadRequest)
         return
     }
@@ -92,6 +105,7 @@ func (self *JobBuilder) BuildJob(resp http.ResponseWriter, req *http.Request) {
     // @todo only allow a limited set of config params, based on driver
     jobSpec.Config["work_dir"] = "${NOMAD_TASK_DIR}/work"
 
+    // https://www.nomadproject.io/api/json-jobs.html
     job := &nomadapi.Job{
         ID: StringToPtr(jobId),
         Name: StringToPtr(jobId),
@@ -111,12 +125,21 @@ func (self *JobBuilder) BuildJob(resp http.ResponseWriter, req *http.Request) {
                         Driver: jobSpec.Driver,
                         Config: jobSpec.Config,
 
-                        Artifacts: []*nomadapi.TaskArtifact{
-                            &nomadapi.TaskArtifact{
-                                GetterSource: StringToPtr(payload.SourceArchive),
-                                RelativeDest: StringToPtr("local/work"),
-                            },
+                        Meta: map[string]string{
+                            "nomadci.clone_source": payload.SourceArchive,
                         },
+
+                        Artifacts: append(
+                            []*nomadapi.TaskArtifact{
+                                // this is the default artifact that provides
+                                // the source that was previously cloned
+                                &nomadapi.TaskArtifact{
+                                    GetterSource: StringToPtr("${NOMAD_META_nomadci_clone_source}"),
+                                    RelativeDest: StringToPtr("local/work"),
+                                },
+                            },
+                            jobSpec.Artifacts...,
+                        ),
                     },
                 },
             },

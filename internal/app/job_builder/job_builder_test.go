@@ -27,9 +27,25 @@ var _ = Describe("JobBuilder", func() {
 
     var mockNomadJobs interfaces.MockNomadJobs
 
-    type submitPayload struct {
-        JobSpec string `json:"job_spec"`
-        SourceArchive string `json:"source_archive"`
+    defaultTaskArtifact := &nomadapi.TaskArtifact{
+        GetterSource: StringToPtr("${NOMAD_META_nomadci_clone_source}"),
+        RelativeDest: StringToPtr("local/work"),
+    }
+
+    submitPayload := func(payload map[string]string) *nomadapi.Job {
+        requestBody, _ := json.Marshal(payload)
+
+        req, err := http.NewRequest("POST", endpoint, bytes.NewReader(requestBody))
+        Expect(err).ShouldNot(HaveOccurred())
+
+        req.Header.Add("Content-Type", "application/json")
+
+        router.ServeHTTP(resp, req)
+        Expect(resp.Code).To(Equal(http.StatusNoContent))
+
+        mockNomadJobs.AssertExpectations(GinkgoT())
+
+        return mockNomadJobs.Calls[0].Arguments[0].(*nomadapi.Job)
     }
 
     BeforeEach(func() {
@@ -40,9 +56,7 @@ var _ = Describe("JobBuilder", func() {
 
         handler = NewJobBuilder(&mockNomadJobs)
         handler.InstallHandlers(router.PathPrefix("/").Subrouter())
-    })
 
-    It("builds and submits a job", func() {
         mockNomadJobs.
             On(
                 "Register",
@@ -56,28 +70,18 @@ var _ = Describe("JobBuilder", func() {
                 &nomadapi.WriteMeta{},
                 nil,
             )
+    })
 
-        requestBody, _ := json.Marshal(map[string]string{
+    It("builds and submits a job", func() {
+        job := submitPayload(map[string]string{
+            "source_archive": "s3.amazonaws.com/bucket/archive.tar.gz",
             "job_spec": `
 driver: docker
 config:
     image: golang
     command: build.sh
 `,
-            "source_archive": "s3.amazonaws.com/bucket/archive.tar.gz",
         })
-
-        req, err := http.NewRequest("POST", endpoint, bytes.NewReader(requestBody))
-        Expect(err).ShouldNot(HaveOccurred())
-
-        req.Header.Add("Content-Type", "application/json")
-
-        router.ServeHTTP(resp, req)
-        Expect(resp.Code).To(Equal(http.StatusNoContent))
-
-        mockNomadJobs.AssertExpectations(GinkgoT())
-
-        job := mockNomadJobs.Calls[0].Arguments[0].(*nomadapi.Job)
 
         // id must be provided, needs to be unique
         Expect(job.ID).ToNot(BeNil())
@@ -106,15 +110,80 @@ config:
                         "work_dir": "${NOMAD_TASK_DIR}/work",
                     },
 
+                    Meta: map[string]string{
+                        "nomadci.clone_source": "s3.amazonaws.com/bucket/archive.tar.gz",
+                    },
+
                     Artifacts: []*nomadapi.TaskArtifact{
+                        defaultTaskArtifact,
+                    },
+                },
+            },
+        }))
+    })
+
+    It("builds and submits a job with an artifact", func() {
+        job := submitPayload(map[string]string{
+            "source_archive": "s3.amazonaws.com/bucket/archive.tar.gz",
+            "job_spec": `
+driver: docker
+config:
+    image: golang
+    command: build.sh
+
+artifacts:
+    -   source: https://example.com/foo-bar
+        destination: local/bin/
+        mode: file
+        options:
+            checksum: sha256:322152b8b50b26e5e3a7f6ebaeb75d9c11a747e64bbfd0d8bb1f4d89a031c2b5
+`,
+        })
+
+        // id must be provided, needs to be unique
+        Expect(job.ID).ToNot(BeNil())
+        Expect(*job.ID).To(HavePrefix("ci-job/"))
+
+        // name must be provided
+        Expect(job.Name).To(Equal(job.ID))
+
+        Expect(job.Datacenters).To(Equal([]string{"dc1"}))
+
+        Expect(job.Type).To(Equal(StringToPtr("batch")))
+
+        Expect(job.TaskGroups).To(HaveLen(1))
+        Expect(job.TaskGroups[0]).To(Equal(&nomadapi.TaskGroup{
+            Name: StringToPtr("builder"),
+
+            Tasks: []*nomadapi.Task{
+                &nomadapi.Task{
+                    Name: "builder",
+
+                    Driver: "docker",
+                    Config: map[string]interface{}{
+                        "image": "golang",
+                        "command": "build.sh",
+
+                        "work_dir": "${NOMAD_TASK_DIR}/work",
+                    },
+
+                    Meta: map[string]string{
+                        "nomadci.clone_source": "s3.amazonaws.com/bucket/archive.tar.gz",
+                    },
+
+                    Artifacts: []*nomadapi.TaskArtifact{
+                        defaultTaskArtifact,
                         &nomadapi.TaskArtifact{
-                            GetterSource: StringToPtr("s3.amazonaws.com/bucket/archive.tar.gz"),
-                            RelativeDest: StringToPtr("local/work"),
+                            GetterSource: StringToPtr("https://example.com/foo-bar"),
+                            RelativeDest: StringToPtr("local/bin/"),
+                            GetterMode:   StringToPtr("file"),
+                            GetterOptions: map[string]string{
+                                "checksum": "sha256:322152b8b50b26e5e3a7f6ebaeb75d9c11a747e64bbfd0d8bb1f4d89a031c2b5",
+                            },
                         },
                     },
                 },
             },
         }))
-
     })
 })

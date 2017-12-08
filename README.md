@@ -13,6 +13,13 @@ config:
         - "foo"
         - "bar"
 
+artifacts:
+    -   source: https://github.com/golang/dep/releases/download/v0.3.2/dep-linux-amd64
+        destination: local/bin/
+        mode: file
+        options:
+            checksum: sha256:322152b8b50b26e5e3a7f6ebaeb75d9c11a747e64bbfd0d8bb1f4d89a031c2b5
+
 constraints:
     -   attribute: "${attr.os.name}"
         value:     "ubuntu"
