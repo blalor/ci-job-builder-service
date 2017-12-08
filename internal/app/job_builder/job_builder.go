@@ -26,6 +26,7 @@ type JobSpec struct {
     Driver    string                   `mapstructure:"driver"`
     Config    map[string]interface{}   `mapstructure:"config"`
     Artifacts []*nomadapi.TaskArtifact `mapstructure:"artifacts"`
+    Env       map[string]string        `mapstructure:"env"`
 }
 
 type JobBuilderPayload struct {
@@ -152,6 +153,8 @@ func (self *JobBuilder) BuildJob(resp http.ResponseWriter, req *http.Request) {
                         Meta: map[string]string{
                             "nomadci.clone_source": payload.SourceArchive,
                         },
+
+                        Env: jobSpec.Env,
 
                         Artifacts: jobSpec.Artifacts,
                     },

@@ -81,6 +81,9 @@ config:
     image: golang
     work_dir: ${NOMAD_TASK_DIR}/work
     command: build.sh
+
+env:
+    foo: bar
 `,
         })
 
@@ -112,6 +115,10 @@ config:
 
                     Meta: map[string]string{
                         "nomadci.clone_source": "s3.amazonaws.com/bucket/archive.tar.gz",
+                    },
+
+                    Env: map[string]string{
+                        "foo": "bar",
                     },
 
                     Artifacts: []*nomadapi.TaskArtifact{
