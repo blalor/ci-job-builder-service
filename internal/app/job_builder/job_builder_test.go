@@ -29,7 +29,6 @@ var _ = Describe("JobBuilder", func() {
 
     defaultTaskArtifact := &nomadapi.TaskArtifact{
         GetterSource: StringToPtr("${NOMAD_META_nomadci_clone_source}"),
-        RelativeDest: StringToPtr("local/work"),
     }
 
     submitPayload := func(payload map[string]string) *nomadapi.Job {

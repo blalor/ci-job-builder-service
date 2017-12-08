@@ -121,7 +121,6 @@ func (self *JobBuilder) BuildJob(resp http.ResponseWriter, req *http.Request) {
             []*nomadapi.TaskArtifact{
                 &nomadapi.TaskArtifact{
                     GetterSource: StringToPtr("${NOMAD_META_nomadci_clone_source}"),
-                    RelativeDest: StringToPtr("local/work"),
                 },
             },
             jobSpec.Artifacts...,
