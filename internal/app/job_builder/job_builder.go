@@ -102,9 +102,6 @@ func (self *JobBuilder) BuildJob(resp http.ResponseWriter, req *http.Request) {
 
     jobId := fmt.Sprintf("ci-job/%d", time.Now().Unix())
 
-    // @todo only allow a limited set of config params, based on driver
-    jobSpec.Config["work_dir"] = "${NOMAD_TASK_DIR}/work"
-
     // if the user hasn't already told us what to do with the clone_source
     // archive, add a default artifact to the job.
     defaultArtifactSource := StringToPtr("${NOMAD_META_nomadci_clone_source}")
@@ -147,6 +144,8 @@ func (self *JobBuilder) BuildJob(resp http.ResponseWriter, req *http.Request) {
                     &nomadapi.Task{
                         Name: "builder",
 
+                        // @todo only allow a limited set of config params,
+                        // based on driver
                         Driver: jobSpec.Driver,
                         Config: jobSpec.Config,
 

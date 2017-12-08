@@ -8,6 +8,7 @@ build script definition resembles parts of a nomad jobspec.
 driver: docker
 config:
     image: golang
+    work_dir: ${NOMAD_TASK_DIR}/work/src/github.com/example/my-repo/
     command: build.sh
     args:
         - "foo"

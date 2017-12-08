@@ -79,6 +79,7 @@ var _ = Describe("JobBuilder", func() {
 driver: docker
 config:
     image: golang
+    work_dir: ${NOMAD_TASK_DIR}/work
     command: build.sh
 `,
         })
@@ -106,7 +107,6 @@ config:
                     Config: map[string]interface{}{
                         "image": "golang",
                         "command": "build.sh",
-
                         "work_dir": "${NOMAD_TASK_DIR}/work",
                     },
 
@@ -129,6 +129,7 @@ config:
 driver: docker
 config:
     image: golang
+    work_dir: ${NOMAD_TASK_DIR}/work
     command: build.sh
 
 artifacts:
@@ -163,7 +164,6 @@ artifacts:
                     Config: map[string]interface{}{
                         "image": "golang",
                         "command": "build.sh",
-
                         "work_dir": "${NOMAD_TASK_DIR}/work",
                     },
 
@@ -194,6 +194,7 @@ artifacts:
 driver: docker
 config:
     image: golang
+    work_dir: ${NOMAD_TASK_DIR}/work/src/github.com/example/my-repo/
     command: build.sh
 
 artifacts:
@@ -225,8 +226,7 @@ artifacts:
                     Config: map[string]interface{}{
                         "image": "golang",
                         "command": "build.sh",
-
-                        "work_dir": "${NOMAD_TASK_DIR}/work",
+                        "work_dir": "${NOMAD_TASK_DIR}/work/src/github.com/example/my-repo/",
                     },
 
                     Meta: map[string]string{
