@@ -52,8 +52,6 @@ test: $(GINKGO) mocks
 watch-tests: $(GINKGO) mocks
 	@$(GINKGO) watch -r
 
-default: work/ci-job-builder-service
-
 work/ci-job-builder-service-linux-amd64: test
 	GOOS=linux GOARCH=amd64 go build -v -o $@ ./cmd/ci-job-builder-service
 
