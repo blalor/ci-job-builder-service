@@ -140,6 +140,10 @@ func (self *JobBuilder) BuildJob(resp http.ResponseWriter, req *http.Request) {
         TaskGroups: []*nomadapi.TaskGroup{
             &nomadapi.TaskGroup{
                 Name: StringToPtr("builder"),
+                RestartPolicy: &nomadapi.RestartPolicy{
+                    Attempts: IntToPtr(0),
+                    Mode: StringToPtr("fail"),
+                },
 
                 Tasks: []*nomadapi.Task{
                     &nomadapi.Task{

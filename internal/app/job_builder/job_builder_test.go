@@ -103,6 +103,10 @@ resources:
         Expect(job.TaskGroups).To(HaveLen(1))
         Expect(job.TaskGroups[0]).To(Equal(&nomadapi.TaskGroup{
             Name: StringToPtr("builder"),
+            RestartPolicy: &nomadapi.RestartPolicy{
+                Attempts: IntToPtr(0),
+                Mode: StringToPtr("fail"),
+            },
 
             Tasks: []*nomadapi.Task{
                 &nomadapi.Task{
@@ -168,6 +172,10 @@ artifacts:
         Expect(job.TaskGroups).To(HaveLen(1))
         Expect(job.TaskGroups[0]).To(Equal(&nomadapi.TaskGroup{
             Name: StringToPtr("builder"),
+            RestartPolicy: &nomadapi.RestartPolicy{
+                Attempts: IntToPtr(0),
+                Mode: StringToPtr("fail"),
+            },
 
             Tasks: []*nomadapi.Task{
                 &nomadapi.Task{
@@ -230,6 +238,10 @@ artifacts:
         Expect(job.TaskGroups).To(HaveLen(1))
         Expect(job.TaskGroups[0]).To(Equal(&nomadapi.TaskGroup{
             Name: StringToPtr("builder"),
+            RestartPolicy: &nomadapi.RestartPolicy{
+                Attempts: IntToPtr(0),
+                Mode: StringToPtr("fail"),
+            },
 
             Tasks: []*nomadapi.Task{
                 &nomadapi.Task{
