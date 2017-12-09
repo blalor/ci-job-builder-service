@@ -27,6 +27,7 @@ type JobSpec struct {
     Config    map[string]interface{}   `mapstructure:"config"`
     Artifacts []*nomadapi.TaskArtifact `mapstructure:"artifacts"`
     Env       map[string]string        `mapstructure:"env"`
+    Resources *nomadapi.Resources      `mapstructure:"resources"`
 }
 
 type JobBuilderPayload struct {
@@ -154,7 +155,7 @@ func (self *JobBuilder) BuildJob(resp http.ResponseWriter, req *http.Request) {
                         },
 
                         Env: jobSpec.Env,
-
+                        Resources: jobSpec.Resources,
                         Artifacts: jobSpec.Artifacts,
                     },
                 },

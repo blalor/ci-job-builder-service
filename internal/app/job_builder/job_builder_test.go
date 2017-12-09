@@ -83,6 +83,9 @@ config:
 
 env:
     foo: bar
+
+resources:
+    memory: 100
 `,
         })
 
@@ -118,6 +121,10 @@ env:
 
                     Env: map[string]string{
                         "foo": "bar",
+                    },
+
+                    Resources: &nomadapi.Resources{
+                        MemoryMB: IntToPtr(100),
                     },
 
                     Artifacts: []*nomadapi.TaskArtifact{
