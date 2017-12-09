@@ -51,6 +51,11 @@ watch-tests: $(GINKGO) mocks
 
 default: work/ci-job-builder-service
 
-work/ci-job-builder-service: test
-	go build -v -o $@ ./cmd/ci-job-builder-service
+work/ci-job-builder-service-linux-amd64: test
+	GOOS=linux GOARCH=amd64 go build -v -o $@ ./cmd/ci-job-builder-service
 
+work/ci-job-builder-service-darwin-amd64: test
+	GOOS=darwin GOARCH=amd64 go build -v -o $@ ./cmd/ci-job-builder-service
+
+default: work/ci-job-builder-service-darwin-amd64
+default: work/ci-job-builder-service-linux-amd64
