@@ -8,25 +8,20 @@ build script definition resembles parts of a nomad jobspec.
 driver: docker
 config:
     image: golang
-    work_dir: ${NOMAD_TASK_DIR}/work/src/github.com/example/my-repo/
-    command: build.sh
+    work_dir: ${NOMAD_TASK_DIR}/go/src/github.com/example/frobnicator/
     args:
-        - "foo"
-        - "bar"
+        - make
+
+env:
+    GOPATH: ${NOMAD_TASK_DIR}/go
+    PATH: ${NOMAD_TASK_DIR}/go/bin:/usr/local/go/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+resources:
+    memory: 512
 
 artifacts:
     -   source: ${NOMAD_META_nomadci_clone_source}
-        destination: local/work/src/github.com/example/my-repo/
-
-    -   source: https://github.com/golang/dep/releases/download/v0.3.2/dep-linux-amd64
-        destination: local/bin/
-        mode: file
-        options:
-            checksum: sha256:322152b8b50b26e5e3a7f6ebaeb75d9c11a747e64bbfd0d8bb1f4d89a031c2b5
-
-constraints:
-    -   attribute: "${attr.os.name}"
-        value:     "ubuntu"
+        destination: local/go/src/github.com/example/frobnicator/
 ```
 
 ## building
